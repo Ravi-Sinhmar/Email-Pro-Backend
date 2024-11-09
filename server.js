@@ -10,7 +10,7 @@ const mailer = require("./Modules/mailer");
 
 // Middleware
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "https://email-pro-mu.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
