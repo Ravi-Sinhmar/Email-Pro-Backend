@@ -14,7 +14,7 @@ const authorize = require("./utils/googleApiAuth");
 const { sendEmail, getUserInfo } = require("./utils/gmailServices");
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "https://email-pro-mu.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -64,7 +64,7 @@ app.get('/oauth2callback', async (req, res) => {
     try {
       const { tokens } = await auth.getToken(code);
       auth.setCredentials(tokens);
-      res.cookie('auth_token', tokens.refresh_token, { httpOnly: true, secure: false });
+      res.cookie('auth_token', tokens.refresh_token, { httpOnly: true, secure: true });
       res.status(200).send('Authentication successful! Please return to the console.');
     } catch (error) {
       console.error("Error exchanging code for tokens:", error);
