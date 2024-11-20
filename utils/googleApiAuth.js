@@ -51,6 +51,7 @@ async function authorize(refresh_token) {
   let isValid = true;
   let client = null;
   if (refresh_token != "noToken") {
+    console.log("Ye token");
     client = await loadSavedCredentialsIfExists(refresh_token);
   }
 

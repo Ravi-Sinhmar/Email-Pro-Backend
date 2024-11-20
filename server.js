@@ -4,15 +4,20 @@ const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-
+const bodyParser = require('body-parser');
 const app = express();
+
+// Parse application/json
+ app.use(bodyParser.json());
+ app.use(bodyParser.urlencoded({ extended: true }));
+
 const port = 5000;
 const cookieParser = require("cookie-parser");
 
 app.use(cookieParser());
 
 const authorize = require("./utils/googleApiAuth");
-const { sendEmail, getUserInfo } = require("./utils/gmailServices");
+const { sendEmail,listInboxEmails } = require("./utils/gmailServices");
 
 const corsOptions = {
   origin: "http://localhost:5173",
@@ -41,6 +46,7 @@ let auth;
 
 app.post('/authenticate', async (req, res) => {
   try {
+ 
     let auth_token = req.cookies.auth_token;
     console.log("cookies",auth_token);
     if (!auth_token) {
@@ -48,9 +54,10 @@ app.post('/authenticate', async (req, res) => {
     }
     auth = await authorize(auth_token);
     const token = auth.credentials.refresh_token; // Store as plain string
-   
-    res.cookie('auth_token', token, { httpOnly: true, secure: false });
-    res.status(200).json({ success: true, message: "Authentication successful" });
+if(token){
+  res.cookie('auth_token', token, { httpOnly: true, secure: false });
+}
+    res.status(200).json({ success: true, token:token});
   } catch (error) {
     console.error("Authentication failed:", error);
     res.status(500).json({ success: false, message: "Authentication failed" });
@@ -58,10 +65,32 @@ app.post('/authenticate', async (req, res) => {
 });
 
 
-app.get('/oauth2callback',(req,res)=>{
-  console.log("OAuth2CallBack Running")
-  res.json({success:true});
+app.post('/readEmails', async (req, res) => {
+  try {
+ 
+    let auth_token = req.cookies.auth_token;
+    const count = req.body.count;
+    console.log('count',count);
+    console.log("cookies readEmails",auth_token);
+    if (!auth_token) {
+      auth_token = "noToken";
+    }
+    const mess = await listInboxEmails(auth,count);
+    const token = auth.credentials.refresh_token; // Store as plain string
+   
+    res.cookie('auth_token', token, { httpOnly: true, secure: false });
+    res.status(200).json({ success: true, message: "Authentication successful", data:mess });
+  } catch (error) {
+    console.error("Authentication failed:", error);
+    res.status(500).json({ success: false, message: "Authentication failed" });
+  }
 });
+
+
+// app.get('/oauth2callback',(req,res)=>{
+//   console.log("OAuth2CallBack Running")
+//   res.json({success:true});
+// });
 
 
 app.post("/sendEmail", upload.single("resume"), async (req, res) => {
