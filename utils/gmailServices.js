@@ -2,9 +2,10 @@ const { google } = require("googleapis");
 const fs = require("fs");
 const path = require("path");
 
-async function sendEmail(auth, toEmail, subject, message, attachmentPath) {
-  const gmail = google.gmail({ version: "v1", auth });
+async function sendEmail(auth, toEmail, subject, message, attachment = null) {
+  const gmail = google.gmail({ version: 'v1', auth });
 
+  // Construct the email body
   let emailBody = [
     `To: ${toEmail}`,
     `Subject: ${subject}`,
@@ -16,43 +17,54 @@ async function sendEmail(auth, toEmail, subject, message, attachmentPath) {
     `Content-Transfer-Encoding: 7bit`,
     ``,
     message,
-  ].join("\n");
+    `--boundary--`,
+  ].join('\n');
 
-  if (attachmentPath) {
-    const attachmentContent = fs
-      .readFileSync(attachmentPath)
-      .toString("base64");
-    emailBody += [
+  // Add attachment if provided
+  if (attachment) {
+    const attachmentContent = attachment.buffer.toString('base64');
+    emailBody = [
+      `To: ${toEmail}`,
+      `Subject: ${subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/mixed; boundary="boundary"`,
       ``,
       `--boundary`,
-      `Content-Type: application/pdf; name="${path.basename(attachmentPath)}"`,
-      `Content-Disposition: attachment; filename="${path.basename(
-        attachmentPath
-      )}"`,
+      `Content-Type: text/html; charset="UTF-8"`,
+      `Content-Transfer-Encoding: 7bit`,
+      ``,
+      message,
+      ``,
+      `--boundary`,
+      `Content-Type: ${attachment.mimetype}; name="${attachment.originalname}"`,
+      `Content-Disposition: attachment; filename="${attachment.originalname}"`,
       `Content-Transfer-Encoding: base64`,
       ``,
       attachmentContent,
       `--boundary--`,
-    ].join("\n");
-  } else {
-    emailBody += `--boundary--`;
+    ].join('\n');
   }
 
+  // Encode the email body
   const encodedMessage = Buffer.from(emailBody)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 
+  // Send the email
   const res = await gmail.users.messages.send({
-    userId: "me",
+    userId: 'me',
     requestBody: {
       raw: encodedMessage,
     },
   });
+
   console.log(`Email sent to ${toEmail}:`, res.data);
   return res.data;
 }
+
+
 
 async function getUserInfo(auth) {
   const gmail = google.gmail({ version: "v1", auth });
